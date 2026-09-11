@@ -1,31 +1,58 @@
-const STORAGE_KEY = "annonces";
+import { supabase } from "./supabase";
 
-export function getAnnonces() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
+export async function getAnnonces() {
+  const { data, error } = await supabase
+    .from("annonces")
+    .select("*")
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("Erreur chargement annonces :", error);
     return [];
   }
+
+  return data;
 }
 
-export function saveAnnonce(annonce) {
-  const annonces = getAnnonces();
+export async function saveAnnonce(annonce) {
+  const { data, error } = await supabase
+    .from("annonces")
+    .insert([
+      {
+        titre: annonce.titre,
+        categorie: annonce.categorie,
+        type: annonce.type,
+        description: annonce.description,
+        departement: annonce.departement || null,
+        age: annonce.age,
+        email: annonce.email || null,
+        instagram: annonce.instagram || null,
+        snapchat: annonce.snapchat || null,
+        facebook: annonce.facebook || null,
+        role: annonce.role || null,
+        genre: annonce.genre || null,
+        tags: annonce.tags || [],
+      },
+    ])
+    .select()
+    .single();
 
-  const nouvelleAnnonce = {
-    id: crypto.randomUUID(),
-    date: new Date().toISOString(),
-    ...annonce,
-  };
+  if (error) {
+    console.error("Erreur publication annonce :", error);
+    return null;
+  }
 
-  const prochainesAnnonces = [nouvelleAnnonce, ...annonces];
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(prochainesAnnonces));
-
-  return nouvelleAnnonce;
+  return data;
 }
 
-export function getAnnonceById(id) {
-  const annonces = getAnnonces();
-  return annonces.find((annonce) => annonce.id === id) || null;
+export async function getAnnonceById(id) {
+  const { data, error } = await supabase
+    .from("annonces")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+
+  return data;
 }

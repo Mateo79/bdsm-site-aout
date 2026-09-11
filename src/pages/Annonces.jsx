@@ -32,9 +32,24 @@ export default function Annonces() {
 
   const [tri, setTri] = useState("recent");
   const [page, setPage] = useState(1);
+  const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
-    setAnnonces(getAnnonces());
+    let actif = true;
+
+    async function charger() {
+      const data = await getAnnonces();
+      if (actif) {
+        setAnnonces(data);
+        setChargement(false);
+      }
+    }
+
+    charger();
+
+    return () => {
+      actif = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -218,7 +233,11 @@ export default function Annonces() {
         </div>
       </div>
 
-      {annonces.length === 0 ? (
+      {chargement ? (
+        <div className="rounded-3xl border border-stone-200 bg-white/80 p-10 text-center text-stone-500 shadow-soft">
+          Chargement des annonces...
+        </div>
+      ) : annonces.length === 0 ? (
         <div className="rounded-3xl border border-rose-200 bg-gradient-to-br from-white via-amber-50 to-rose-50 p-10 text-center text-stone-600 shadow-soft">
           Aucune annonce pour le moment.
         </div>

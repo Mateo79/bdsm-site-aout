@@ -24,10 +24,11 @@ export default function Chat() {
   );
 
   const [pseudo, setPseudo] = useState(() => getPseudo());
-  const [salons, setSalons] = useState(() => getSalons());
+  const [salons, setSalons] = useState([]);
   const [salonActifId, setSalonActifId] = useState("accueil");
-  const [messages, setMessages] = useState(() => getMessages());
+  const [messages, setMessages] = useState([]);
   const [texte, setTexte] = useState("");
+  const [chargement, setChargement] = useState(true);
 
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [nomSalon, setNomSalon] = useState("");
@@ -36,15 +37,34 @@ export default function Chat() {
   const basDePage = useRef(null);
 
   useEffect(() => {
-    const desinscriptionMessages = surNouveauMessage(() => {
-      setMessages(getMessages());
+    let actif = true;
+
+    async function charger() {
+      const [salonsDonnees, messagesDonnees] = await Promise.all([
+        getSalons(),
+        getMessages(),
+      ]);
+      if (actif) {
+        setSalons(salonsDonnees);
+        setMessages(messagesDonnees);
+        setChargement(false);
+      }
+    }
+
+    charger();
+
+    const desinscriptionMessages = surNouveauMessage((message) => {
+      setMessages((prev) =>
+        prev.some((m) => m.id === message.id) ? prev : [...prev, message]
+      );
     });
 
     const desinscriptionSalons = surNouveauSalon(() => {
-      setSalons(getSalons());
+      getSalons().then((donnees) => setSalons(donnees));
     });
 
     return () => {
+      actif = false;
       desinscriptionMessages();
       desinscriptionSalons();
     };
@@ -60,19 +80,27 @@ export default function Chat() {
   }
 
   const salonActif = salons.find((s) => s.id === salonActifId) || salons[0];
-  const messagesDuSalon = messages.filter((m) => m.salon === salonActif.id);
+  const messagesDuSalon = messages.filter(
+    (m) => m.salon_id === salonActif?.id
+  );
 
-  function envoyer(event) {
-    event.preventDefault();
-    const contenu = texte.trim();
-    if (!contenu) return;
-
-    envoyerMessage(salonActif.id, pseudo, contenu);
-    setMessages(getMessages());
-    setTexte("");
+  function ajouterMessage(message) {
+    setMessages((prev) =>
+      prev.some((m) => m.id === message.id) ? prev : [...prev, message]
+    );
   }
 
-  function creerNouveauSalon(event) {
+  async function envoyer(event) {
+    event.preventDefault();
+    const contenu = texte.trim();
+    if (!contenu || !salonActif) return;
+
+    setTexte("");
+    const message = await envoyerMessage(salonActif.id, pseudo, contenu);
+    if (message) ajouterMessage(message);
+  }
+
+  async function creerNouveauSalon(event) {
     event.preventDefault();
     const nom = nomSalon.trim();
 
@@ -86,22 +114,34 @@ export default function Chat() {
       return;
     }
 
-    if (salonExiste(nom)) {
+    if (await salonExiste(nom)) {
       alert("Un salon porte déjà ce nom.");
       return;
     }
 
-    const nouveauSalon = creerSalon(nom, descriptionSalon);
+    const nouveauSalon = await creerSalon(nom, descriptionSalon);
 
-    setSalons(getSalons());
-    setSalonActifId(nouveauSalon.id);
-    setFormulaireOuvert(false);
-    setNomSalon("");
-    setDescriptionSalon("");
+    if (nouveauSalon) {
+      setSalons(await getSalons());
+      setSalonActifId(nouveauSalon.id);
+      setFormulaireOuvert(false);
+      setNomSalon("");
+      setDescriptionSalon("");
+    } else {
+      alert("La création du salon a échoué. Réessaie.");
+    }
   }
 
   if (!charteAcceptee) {
     return <Charte onAccept={accepterCharte} />;
+  }
+
+  if (chargement || !salonActif) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-3xl border border-stone-200 bg-white/80 p-10 text-center text-stone-500 shadow-soft">
+        Chargement du chat...
+      </div>
+    );
   }
 
   return (

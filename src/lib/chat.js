@@ -1,10 +1,4 @@
-const STORAGE_KEY = "chat_messages";
-const MAX_MESSAGES = 200;
-
-const canal =
-  typeof BroadcastChannel !== "undefined"
-    ? new BroadcastChannel("chat-anonyme")
-    : null;
+import { supabase } from "./supabase";
 
 const adjectifs = [
   "Ombre",
@@ -56,37 +50,47 @@ export function changerPseudo() {
   return pseudo;
 }
 
-export function getMessages() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
+export async function getMessages() {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .order("date", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error("Erreur chargement messages :", error);
     return [];
   }
+
+  return data.reverse();
 }
 
-export function envoyerMessage(salon, pseudo, texte) {
-  const message = {
-    id: crypto.randomUUID(),
-    salon,
-    pseudo,
-    texte,
-    date: new Date().toISOString(),
-  };
+export async function envoyerMessage(salonId, pseudo, texte) {
+  const { data, error } = await supabase
+    .from("messages")
+    .insert([{ salon_id: salonId, pseudo, texte }])
+    .select()
+    .single();
 
-  const messages = [...getMessages(), message].slice(-MAX_MESSAGES);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  if (error) {
+    console.error("Erreur envoi message :", error);
+    return null;
+  }
 
-  if (canal) canal.postMessage(message);
-
-  return message;
+  return data;
 }
 
 export function surNouveauMessage(callback) {
-  if (!canal) return () => {};
+  const channel = supabase
+    .channel("ecoute-messages")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages" },
+      (payload) => callback(payload.new)
+    )
+    .subscribe();
 
-  const gestionnaire = (event) => callback(event.data);
-  canal.addEventListener("message", gestionnaire);
-
-  return () => canal.removeEventListener("message", gestionnaire);
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

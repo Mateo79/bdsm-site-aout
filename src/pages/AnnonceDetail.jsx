@@ -30,8 +30,21 @@ export default function AnnonceDetail() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setAnnonce(getAnnonceById(id));
-    setLoaded(true);
+    let actif = true;
+
+    async function charger() {
+      const data = await getAnnonceById(id);
+      if (actif) {
+        setAnnonce(data);
+        setLoaded(true);
+      }
+    }
+
+    charger();
+
+    return () => {
+      actif = false;
+    };
   }, [id]);
 
   if (!loaded) {

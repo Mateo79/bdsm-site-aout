@@ -1,90 +1,68 @@
-const STORAGE_KEY = "salons";
+import { supabase } from "./supabase";
 
-const canal =
-  typeof BroadcastChannel !== "undefined"
-    ? new BroadcastChannel("chat-salons")
-    : null;
+function mapperSalon(ligne) {
+  return {
+    id: ligne.id,
+    nom: ligne.nom,
+    description: ligne.description,
+    parDefaut: ligne.par_defaut,
+    date: ligne.date,
+  };
+}
 
-const salonsParDefaut = [
-  {
-    id: "accueil",
-    nom: "Accueil",
-    description: "Pour discuter librement et faire connaissance.",
-    parDefaut: true,
-  },
-  {
-    id: "debutants",
-    nom: "Débutants",
-    description: "Pose tes questions sans jugement, on est là pour t'aider.",
-    parDefaut: true,
-  },
-  {
-    id: "soft",
-    nom: "Soft",
-    description: "Discussions autour des pratiques douces.",
-    parDefaut: true,
-  },
-  {
-    id: "hard",
-    nom: "Hard",
-    description: "Pour les pratiquant·e·s expérimenté·e·s.",
-    parDefaut: true,
-  },
-  {
-    id: "fetichisme",
-    nom: "Fétichisme",
-    description: "Cuir, latex, cordes, pieds... parle de ce qui te plaît.",
-    parDefaut: true,
-  },
-  {
-    id: "rencontres",
-    nom: "Rencontres",
-    description: "Pour échanger autour des annonces.",
-    parDefaut: true,
-  },
-];
+export async function getSalons() {
+  const { data, error } = await supabase
+    .from("salons")
+    .select("*")
+    .order("date", { ascending: true });
 
-export function getSalons() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (data) return JSON.parse(data);
-  } catch {
-    // on repart des salons par défaut si les données sont corrompues
+  if (error) {
+    console.error("Erreur chargement salons :", error);
+    return [];
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(salonsParDefaut));
-  return salonsParDefaut;
+  return data.map(mapperSalon);
 }
 
-export function salonExiste(nom) {
+export async function salonExiste(nom) {
+  const salons = await getSalons();
   const nomMinuscule = nom.trim().toLowerCase();
-  return getSalons().some((s) => s.nom.toLowerCase() === nomMinuscule);
+  return salons.some((s) => s.nom.toLowerCase() === nomMinuscule);
 }
 
-export function creerSalon(nom, description) {
-  const salons = getSalons();
+export async function creerSalon(nom, description) {
+  const { data, error } = await supabase
+    .from("salons")
+    .insert([
+      {
+        id: crypto.randomUUID(),
+        nom: nom.trim(),
+        description: description.trim() || "Salon créé par la communauté.",
+        par_defaut: false,
+      },
+    ])
+    .select()
+    .single();
 
-  const nouveauSalon = {
-    id: crypto.randomUUID(),
-    nom: nom.trim(),
-    description: description.trim() || "Salon créé par la communauté.",
-    parDefaut: false,
-    date: new Date().toISOString(),
-  };
+  if (error) {
+    console.error("Erreur création salon :", error);
+    return null;
+  }
 
-  const prochainsSalons = [...salons, nouveauSalon];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(prochainsSalons));
-
-  if (canal) canal.postMessage(nouveauSalon);
-
-  return nouveauSalon;
+  return mapperSalon(data);
 }
 
 export function surNouveauSalon(callback) {
-  if (!canal) return () => {};
+  const channel = supabase
+    .channel("ecoute-salons")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "salons" },
+      (payload) => callback(payload.new)
+    )
+    .subscribe();
 
-  const gestionnaire = (event) => callback(event.data);
-  canal.addEventListener("message", gestionnaire);
-
-  return () => canal.removeEventListener("message", gestionnaire);
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
