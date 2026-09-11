@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Fetichisme from "./Fetichisme";
+import Seo from "../components/Seo";
+
 
 const bases = [
   {
@@ -167,6 +169,8 @@ export default function Conseils() {
   function togglePratique(nom) {
     setPratiqueOuverte((actuelle) => (actuelle === nom ? null : nom));
   }
+
+  <Seo title="Guide des pratiques BDSM – Nexus Kink" description="Dictionnaire des pratiques et fétichismes BDSM : vanille, soft, hard, bondage, shibari... Guide bienveillant pour adultes." />
 
   return (
     <div className="grid gap-6">

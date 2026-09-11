@@ -14,6 +14,7 @@ import {
 } from "../lib/salons";
 import Charte from "../components/Charte";
 import BoutonSignalement from "../components/BoutonSignalement";
+import Seo from "../components/Seo";
 
 const inputClass =
   "w-full rounded-xl border border-violet-200 bg-white/90 px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-200";
@@ -29,6 +30,7 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [texte, setTexte] = useState("");
   const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState(null);
 
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [nomSalon, setNomSalon] = useState("");
@@ -40,14 +42,32 @@ export default function Chat() {
     let actif = true;
 
     async function charger() {
-      const [salonsDonnees, messagesDonnees] = await Promise.all([
-        getSalons(),
-        getMessages(),
-      ]);
-      if (actif) {
-        setSalons(salonsDonnees);
-        setMessages(messagesDonnees);
-        setChargement(false);
+      try {
+        setErreur(null);
+        const [salonsDonnees, messagesDonnees] = await Promise.all([
+          getSalons(),
+          getMessages(),
+        ]);
+
+        if (actif) {
+          if (salonsDonnees.length === 0) {
+            setErreur(
+              "Aucun salon trouvé dans la base de données. Vérifie que le script SQL a bien été exécuté dans Supabase (table `salons` avec les 6 salons par défaut)."
+            );
+          } else {
+            setSalons(salonsDonnees);
+            setMessages(messagesDonnees);
+          }
+          setChargement(false);
+        }
+      } catch (err) {
+        console.error("Erreur chargement chat :", err);
+        if (actif) {
+          setErreur(
+            "Impossible de charger le chat. Vérifie ta connexion Supabase (URL et clé publishable dans src/lib/supabase.js)."
+          );
+          setChargement(false);
+        }
       }
     }
 
@@ -84,12 +104,6 @@ export default function Chat() {
     (m) => m.salon_id === salonActif?.id
   );
 
-  function ajouterMessage(message) {
-    setMessages((prev) =>
-      prev.some((m) => m.id === message.id) ? prev : [...prev, message]
-    );
-  }
-
   async function envoyer(event) {
     event.preventDefault();
     const contenu = texte.trim();
@@ -97,7 +111,11 @@ export default function Chat() {
 
     setTexte("");
     const message = await envoyerMessage(salonActif.id, pseudo, contenu);
-    if (message) ajouterMessage(message);
+    if (message) {
+      setMessages((prev) =>
+        prev.some((m) => m.id === message.id) ? prev : [...prev, message]
+      );
+    }
   }
 
   async function creerNouveauSalon(event) {
@@ -136,13 +154,41 @@ export default function Chat() {
     return <Charte onAccept={accepterCharte} />;
   }
 
-  if (chargement || !salonActif) {
+  if (chargement) {
     return (
       <div className="mx-auto max-w-2xl rounded-3xl border border-stone-200 bg-white/80 p-10 text-center text-stone-500 shadow-soft">
         Chargement du chat...
       </div>
     );
   }
+
+  if (erreur) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center shadow-soft">
+        <h1 className="font-serif text-2xl text-rose-800">
+          ⚠️ Le chat ne peut pas se charger
+        </h1>
+        <p className="mt-4 text-sm text-rose-700">{erreur}</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-6 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 px-5 py-3 font-semibold text-white shadow-md transition hover:opacity-95"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
+  if (!salonActif) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-3xl border border-stone-200 bg-white/80 p-10 text-center text-stone-500 shadow-soft">
+        Aucun salon disponible.
+      </div>
+    );
+  }
+
+  <Seo title="Chat anonyme BDSM – Nexus Kink" description="Discutez anonymement dans des salons thématiques : débutants, soft, hard, fétichisme. Sans inscription, 18+." />
 
   return (
     <div className="grid gap-6">

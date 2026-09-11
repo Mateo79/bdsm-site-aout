@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAnnonces } from "../lib/annonces";
 import AnnonceCard from "../components/AnnonceCard";
+import Seo from "../components/Seo";
+
 
 const PAR_PAGE = 6;
 
@@ -58,6 +60,8 @@ export default function Annonces() {
 
   const annoncesFiltrees = useMemo(() => {
     const rechercheDepartement = filtreDepartement.trim().toLowerCase();
+
+    <Seo title="Annonces rencontres BDSM – Nexus Kink" description="Consultez et filtrez les annonces de rencontres BDSM entre adultes consentants : rôles, départements, pratiques." />
 
     return annonces.filter((annonce) => {
       if (filtreRole !== "Tous" && annonce.role !== filtreRole) return false;

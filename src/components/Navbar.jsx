@@ -12,7 +12,7 @@ export default function Navbar() {
           to="/"
           className="bg-gradient-to-r from-rose-600 via-orange-500 to-amber-600 bg-clip-text font-serif text-2xl font-bold text-transparent"
         >
-          Espace Rencontres
+          Nexus Kink
         </Link>
 
         <nav className="flex flex-wrap items-center gap-2">

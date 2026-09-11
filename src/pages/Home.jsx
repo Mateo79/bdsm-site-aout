@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
+import Seo from "../components/Seo";
 
 export default function Home() {
+
+  <Seo title="Nexus Kink – Communauté BDSM bienveillante" description="Annonces, textes, conseils et chat anonyme entre adultes consentants." />
+
   return (
     <section className="grid gap-6">
       <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-10 shadow-soft backdrop-blur">

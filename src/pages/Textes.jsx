@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTextes, saveTexte } from "../lib/textes";
 import EditeurRiche from "../components/EditeurRiche";
+import Seo from "../components/Seo";
+
 
 const inputClass =
   "w-full rounded-xl border border-rose-100 bg-white/90 px-4 py-3 text-stone-900 shadow-sm outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-200";
@@ -80,6 +82,8 @@ export default function Textes() {
         ? "bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 text-white shadow-md"
         : "border border-stone-200 bg-white text-stone-600 hover:bg-rose-50 hover:text-rose-700"
     }`;
+
+  <Seo title="Textes & récits érotiques – Nexus kink" description="Lisez et publiez des textes érotiques et récits BDSM écrits par la communauté." />
 
   return (
     <div className="grid gap-6">
