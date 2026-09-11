@@ -99,6 +99,7 @@ const tagsPratiques = [
 
 export default function AnnonceForm() {
   const navigate = useNavigate();
+  const [publication, setPublication] = useState(false);
 
   const [form, setForm] = useState({
     titre: "",
@@ -146,7 +147,7 @@ export default function AnnonceForm() {
     }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!form.majeur) {
@@ -183,7 +184,9 @@ export default function AnnonceForm() {
         ? form.genreDetail
         : form.genre;
 
-    saveAnnonce({
+    setPublication(true);
+
+    const nouvelle = await saveAnnonce({
       ...form,
       email,
       instagram,
@@ -193,7 +196,13 @@ export default function AnnonceForm() {
       age: Number(form.age),
     });
 
-    navigate("/annonces");
+    setPublication(false);
+
+    if (nouvelle) {
+      navigate("/annonces");
+    } else {
+      alert("La publication a échoué. Réessaie dans un instant.");
+    }
   }
 
   return (
@@ -499,14 +508,14 @@ export default function AnnonceForm() {
 
       <button
         type="submit"
-        className="rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 px-5 py-3 font-semibold text-white shadow-md transition hover:opacity-95"
+        disabled={publication}
+        className="rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 px-5 py-3 font-semibold text-white shadow-md transition hover:opacity-95 disabled:opacity-50"
       >
-        Publier l'annonce
+        {publication ? "Publication en cours..." : "Publier l'annonce"}
       </button>
 
       <p className="rounded-xl border border-stone-200/80 bg-white/70 p-4 text-sm text-stone-500">
-        Version de test : l'annonce est enregistrée uniquement dans ton
-        navigateur.
+        Ton annonce sera visible par tous les visiteurs du site.
       </p>
     </form>
   );
