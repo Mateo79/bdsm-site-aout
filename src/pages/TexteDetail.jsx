@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import DOMPurify from "dompurify";
 import { getTexteById } from "../lib/textes";
 import BoutonSignalement from "../components/BoutonSignalement";
 
@@ -10,8 +11,21 @@ export default function TexteDetail() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setTexte(getTexteById(id));
-    setLoaded(true);
+    let actif = true;
+
+    async function charger() {
+      const data = await getTexteById(id);
+      if (actif) {
+        setTexte(data);
+        setLoaded(true);
+      }
+    }
+
+    charger();
+
+    return () => {
+      actif = false;
+    };
   }, [id]);
 
   if (!loaded) return null;
@@ -63,7 +77,7 @@ export default function TexteDetail() {
 
         <div
           className="contenu-texte mt-6 break-words"
-          dangerouslySetInnerHTML={{ __html: texte.contenu }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(texte.contenu) }}
         />
       </div>
     </div>

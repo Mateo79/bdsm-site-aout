@@ -1,28 +1,48 @@
-const STORAGE_KEY = "textes";
+import { supabase } from "./supabase";
 
-export function getTextes() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
+export async function getTextes() {
+  const { data, error } = await supabase
+    .from("textes")
+    .select("*")
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("Erreur chargement textes :", error);
     return [];
   }
+
+  return data;
 }
 
-export function saveTexte(texte) {
-  const textes = getTextes();
+export async function saveTexte(texte) {
+  const { data, error } = await supabase
+    .from("textes")
+    .insert([
+      {
+        titre: texte.titre,
+        pseudo: texte.pseudo,
+        contenu: texte.contenu,
+      },
+    ])
+    .select()
+    .single();
 
-  const nouveauTexte = {
-    id: crypto.randomUUID(),
-    date: new Date().toISOString(),
-    ...texte,
-  };
+  if (error) {
+    console.error("Erreur publication texte :", error);
+    return null;
+  }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([nouveauTexte, ...textes]));
-
-  return nouveauTexte;
+  return data;
 }
 
-export function getTexteById(id) {
-  return getTextes().find((texte) => texte.id === id) || null;
+export async function getTexteById(id) {
+  const { data, error } = await supabase
+    .from("textes")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+
+  return data;
 }

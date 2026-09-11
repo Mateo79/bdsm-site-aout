@@ -20,16 +20,33 @@ export default function Textes() {
 
   const [onglet, setOnglet] = useState("lire");
   const [textes, setTextes] = useState([]);
+  const [chargement, setChargement] = useState(true);
 
   const [titre, setTitre] = useState("");
   const [pseudo, setPseudo] = useState("");
   const [contenu, setContenu] = useState("");
+  const [publication, setPublication] = useState(false);
 
   useEffect(() => {
-    setTextes(getTextes());
+    let actif = true;
+
+    async function charger() {
+      setChargement(true);
+      const data = await getTextes();
+      if (actif) {
+        setTextes(data);
+        setChargement(false);
+      }
+    }
+
+    charger();
+
+    return () => {
+      actif = false;
+    };
   }, [onglet]);
 
-  function publierTexte() {
+  async function publierTexte() {
     if (!titre.trim()) {
       alert("Ajoute un titre à ton texte.");
       return;
@@ -40,18 +57,26 @@ export default function Textes() {
       return;
     }
 
-    const nouveauTexte = saveTexte({
+    setPublication(true);
+
+    const nouveauTexte = await saveTexte({
       titre: titre.trim(),
       pseudo: pseudo.trim() || "Anonyme",
       contenu,
     });
 
-    navigate(`/textes/${nouveauTexte.id}`);
+    setPublication(false);
+
+    if (nouveauTexte) {
+      navigate(`/textes/${nouveauTexte.id}`);
+    } else {
+      alert("La publication a échoué. Réessaie dans un instant.");
+    }
   }
 
-  const ongletClass = (actif) =>
+  const ongletClass = (actifTab) =>
     `rounded-xl px-6 py-3 font-semibold transition ${
-      actif
+      actifTab
         ? "bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 text-white shadow-md"
         : "border border-stone-200 bg-white text-stone-600 hover:bg-rose-50 hover:text-rose-700"
     }`;
@@ -87,7 +112,11 @@ export default function Textes() {
       </div>
 
       {onglet === "lire" &&
-        (textes.length === 0 ? (
+        (chargement ? (
+          <div className="rounded-3xl border border-violet-200 bg-white/80 p-10 text-center text-stone-500 shadow-soft">
+            Chargement des textes...
+          </div>
+        ) : textes.length === 0 ? (
           <div className="rounded-3xl border border-violet-200 bg-gradient-to-br from-white via-violet-50 to-rose-50 p-10 text-center text-stone-600 shadow-soft">
             Aucun texte publié pour le moment. Sois la première personne à écrire !
           </div>
@@ -173,9 +202,10 @@ export default function Textes() {
             <button
               type="button"
               onClick={publierTexte}
-              className="rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 px-5 py-3 font-semibold text-white shadow-md transition hover:opacity-95"
+              disabled={publication}
+              className="rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 px-5 py-3 font-semibold text-white shadow-md transition hover:opacity-95 disabled:opacity-50"
             >
-              Publier le texte
+              {publication ? "Publication en cours..." : "Publier le texte"}
             </button>
           </div>
         </div>

@@ -9,6 +9,31 @@ import Textes from './pages/Textes'
 import TexteDetail from './pages/TexteDetail'
 import Conseils from './pages/Conseils'
 import Chat from './pages/Chat'
+import { useState, useEffect } from 'react'
+import { supabase } from './utils/supabase'
+
+export default function App() {
+  const [todos, setTodos] = useState([])
+
+  useEffect(() => {
+    async function getTodos() {
+      const { data: todos } = await supabase.from('todos').select()
+
+      if (todos) {
+        setTodos(todos)
+      }
+    }
+
+    getTodos()
+  }, [])
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li key={todo.id}>{todo.name}</li>
+      ))}
+    </ul>
+  )
 
 export default function App() {
   return (
@@ -34,4 +59,9 @@ export default function App() {
       </footer>
     </div>
   );
+}
+
+
+
+
 }
