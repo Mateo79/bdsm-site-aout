@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply font-sans text-stone-800 antialiased;
+}
+
+::selection {
+  @apply bg-rose-200 text-rose-900;
+}
+
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: #a8a29e;
+  pointer-events: none;
+}
+
+.contenu-texte {
+  @apply leading-relaxed text-stone-700;
+}
+
+.contenu-texte ul {
+  @apply my-3 list-disc pl-6;
+}
+
+.contenu-texte ol {
+  @apply my-3 list-decimal pl-6;
+}
+
+.contenu-texte a {
+  @apply text-rose-600 underline;
+}
+
+.contenu-texte blockquote {
+  @apply my-3 border-l-4 border-rose-200 pl-4 italic text-stone-600;
+}
